@@ -1,3 +1,7 @@
+"""
+Module for utility functions.
+"""
+
 import itertools
 from collections import deque 
 
@@ -22,8 +26,9 @@ def windows(generator, left_size, right_size):
 
 def thread(generator, side_effect):
     """
-    Thread some side effect silently through a generator
+    Thread some side effect silently through a generator.
     I.e. the generator should not look any different.
+    (Unless the side-effect is nasty)
     """
     for elem in generator:
         side_effect(elem)
