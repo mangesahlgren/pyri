@@ -3,13 +3,17 @@ Module for utility functions.
 """
 
 import itertools
-from collections import deque 
+from collections import deque
+from cityhash import CityHash128
+import numpy
+import functools
 
 def windows(generator, left_size, right_size):
     """
     Create a generator of type [(left_context, a, right_context)]
     from a generator of type [a], where left_context has size
-    left_size and right_context has size right_size
+    left_size and right_context has size right_size.
+    The contexts are padded with Nones.
     """
     right_padding = itertools.repeat(None, right_size)
     left_padding = itertools.repeat(None, left_size)
@@ -24,6 +28,27 @@ def windows(generator, left_size, right_size):
         yield(left_context, focus, right_context)
         left_context.append(focus)
 
+
+
+def vector_generator(dim, nonzeros, cache_size):
+    """
+    Initialize a generator of index vectors.
+    DONT USE THE NUMPY RANDOM GENERATOR 
+    WITHOUT SEEDING AFTER THIS 
+    """
+    def index_vector(word):
+        """
+        Get the index vector of a word.
+        """
+        numpy.random.seed(CityHash128(word))
+        """
+        ^ Does not work, figure out how to convert Word128 to Word32^4
+        """
+        return(numpy.vstack((
+            numpy.random.randint(dim-1, size=nonzeros),
+            numpy.random.randint(0,high=2,size=nonzeros)*2-1)))
+    return(index_vector)
+
 def thread(generator, side_effect):
     """
     Thread some side effect silently through a generator.
@@ -33,3 +58,4 @@ def thread(generator, side_effect):
     for elem in generator:
         side_effect(elem)
         yield elem
+
