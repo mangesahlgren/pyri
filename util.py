@@ -28,7 +28,12 @@ def windows(generator, left_size, right_size):
         yield(left_context, focus, right_context)
         left_context.append(focus)
 
-
+def split128(num):
+    mask = 4294967295
+    return (num & mask,
+            (num >> 32) & mask,
+            (num >> 64) & mask,
+            (num >> 96) & mask)
 
 def vector_generator(dim, nonzeros, cache_size):
     """
@@ -40,7 +45,7 @@ def vector_generator(dim, nonzeros, cache_size):
         """
         Get the index vector of a word.
         """
-        numpy.random.seed(CityHash128(word))
+        numpy.random.seed(split128(CityHash128(word)))
         """
         ^ Does not work, figure out how to convert Word128 to Word32^4
         """
