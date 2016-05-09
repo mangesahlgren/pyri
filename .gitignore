@@ -1,2 +1,15 @@
+#Vim swap files
 *.swp
+
+#Compiled python
 *.pyc
+
+#Setuptools distribution folder
+/dist/
+
+#Egg metadata
+/*.egg-info
+
+#Setuptools build folder
+/build/
+
