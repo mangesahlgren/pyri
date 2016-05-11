@@ -4,8 +4,9 @@
 #Compiled python
 *.pyc
 
-#cython-generated files
+#cython-generated files and libraries
 *.cpp
+*.so
 
 #setuptools build
 build/
