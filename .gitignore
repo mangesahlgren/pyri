@@ -3,3 +3,9 @@
 
 #Compiled python
 *.pyc
+
+#cython-generated files
+*.cpp
+
+#setuptools build
+build/
