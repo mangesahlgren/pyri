@@ -31,6 +31,12 @@ the above returns 127519005, far to small to be correct
 apparently, the FFI defaults to returning ints. However CityHash returns
 std::pair<uint64,uint64>, small testint shows that this is NOT the same as
 two memory consecutive uint64s, need to look into cython. 
+
+Went with murmurhash. The python cityhash library
+did not play well with python 3.
+After messing around in cython i got it to work, just run 
+> python setup.py build-ext -b src/
+in the pyri directory after initiating the conda environment, and switching to it. 
 """
 
 

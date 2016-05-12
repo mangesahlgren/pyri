@@ -1,0 +1,10 @@
+Make sure you have gcc, g++ and conda installed. 
+Conda can be installed by following the instructions here:
+http://conda.pydata.org/docs/install/quick.html#miniconda-quick-install-requirements
+
+To install and switch to the envrionment specified in environment.yml:
+../pyri$ conda env create
+../pyri$ source activate -n pyri
+
+To build murmurhash:
+../pyri$ python setup.py build_ext -b src/
