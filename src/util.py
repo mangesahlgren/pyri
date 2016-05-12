@@ -37,32 +37,23 @@ def tokenize(locale):
         for sentence in sentences(txt):
             yield words(sentence)
 
-def linegenerator(infile):
-    """
-    open a file and make a generator that returns the lines of the file.
-    """
-    with open(infile, 'r') as inp:
-      for line in inp: 
-        yield(line)
-
-def windows(generator, left_size, right_size):
+def windows(generator, size):
     """
     Create a generator of type [(left_context, a, right_context)]
     from a generator of type [a], where left_context has size
     left_size and right_context has size right_size.
-    The contexts are padded with Nones.
     """
-    right_padding = itertools.repeat(None, right_size)
-    left_padding = itertools.repeat(None, left_size)
-
-    gen = itertools.chain(generator, right_padding)
-    left_context = deque(left_padding, left_size)
-    right_context = deque(itertools.islice(gen, 0, right_size), right_size+1)
-
-    for elem in gen:
-        right_context.append(elem)
+    g = iter(generator)
+    left_context = deque((), size)
+    right_context = deque(itertools.islice(g, 0, size), size)
+    for elem in g:
         focus = right_context.popleft()
-        yield(left_context, focus, right_context)
+        right_context.append(elem)
+        yield(focus, (left_context, right_context))
+        left_context.append(focus)
+    while right_context:
+        focus = right_context.popleft()
+        yield(focus, (left_context, right_context))
         left_context.append(focus)
 
 def split64(num):
@@ -87,14 +78,3 @@ def vector_generator(dim, nonzeros, cache_size):
             generator.randint(dim-1, size=nonzeros),
             generator.randint(0, high=2, size=nonzeros)*2-1)))
     return(index_vector)
-
-def thread(generator, side_effect):
-    """
-    Thread some side effect silently through a generator.
-    I.e. the generator should not look any different.
-    (Unless the side-effect is nasty)
-    """
-    for elem in generator:
-        side_effect(elem)
-        yield elem
-

@@ -4,9 +4,50 @@
 #
 # TODO: makeVerySparseIndex
 ####################################
+import util
+import numpy
 import math
-import numpy as np
-import numpy.random as nprnd
+from collections import Counter
+import itertools
+from enum import Enum
+
+def words(line):
+    yield from iter(line.strip().split())
+
+class Direction(Enum):
+    left  = 0
+    right = 1
+
+class WordSpace(object):
+    def __init__(self):
+        self.total = 0             # Total number of tokens
+        self.collocation = {}      # focus o=> (context counter) 
+        self.wordcount = Counter() # focus counter
+
+    def addCount(self, focus, context):
+        if focus not in self.wordcount:
+            self.collocation[focus] = Counter()
+        self.collocation[focus].update(context)
+        self.wordcount[focus] += 1
+        self.total += 1
+
+# online frequency weight defined in:
+# Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
+def weightFunc(freq,words,theta):
+    return math.exp(-theta*(freq/words))
+
+def dsm(infile, size):
+    ws = WordSpace()
+    with open(infile,'r') as handle:
+        for line in handle:
+            for (focus, (left_context, right_context)) in util.windows(words(line), size):
+                context = itertools.chain(
+                        ((Direction.left, x) for x in left_context),
+                        ((Direction.right, x) for x in right_context))
+                ws.addCount(focus, context) 
+    ws.print()    
+
+"""
 from collections import Counter
 from scipy import sparse
 from time import gmtime,strftime
@@ -17,19 +58,6 @@ theta = 60
 worddict = {}
 rivecs = []
 distvecs = []
-
-def trainSparseRI(infile,ctxwin):
-    print("Started: " + strftime("%H:%M:%S",gmtime()))
-    wordtokens = 0
-    wordtypes = 0
-    with open(infile,"r") as inp:
-        for line in inp:
-            wrdlst = line.strip().split()
-            updatetokens,wordtypes = updateVecs(wrdlst,ctxwin,wordtokens,wordtypes)
-            wordtokens += updatetokens
-    print("Number of word tokens: " + str(wordtokens))
-    print("Number of word types: " + str(wordtypes))
-    print("Finished: " + strftime("%H:%M:%S",gmtime()))
 
 def checkReps(wrd,wordtypes):
     global rivecs
@@ -50,7 +78,7 @@ def updateVecs(wrdlst,win,wordtokens,wordtypes):
     ind = 0
     stop = len(wrdlst)
     for w in wrdlst:
-        localtoken += 1
+        localtoken += 1 
         wordtypes += checkReps(w,wordtypes)
         wind = worddict[w][0]
         wvec = distvecs[wind]
@@ -80,3 +108,4 @@ def makeIndex():
 # Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
 def weightFunc(freq,words,theta):
     return math.exp(-theta*(freq/words))
+"""
