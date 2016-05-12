@@ -5,7 +5,3 @@ dependencies:
 - scipy
 - murmurhash
 - cython
-- nltk
-- pip
-- pip:
-    - PyICU

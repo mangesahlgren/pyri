@@ -7,35 +7,6 @@ from collections import deque
 import numpy
 import functools
 import hasher
-import icu
-
-def sentencesplitter(locale):
-    sentence_iterator = icu.BreakIterator.createSentenceInstance(locale)
-    def split(txt):
-        sentence_iterator.setText(txt)
-        left_end = sentence_iterator.current()
-        while sentence_iterator.nextBoundary() != icu.BreakIterator.DONE:
-            yield txt[left_end:sentence_iterator.current()]
-            left_end = sentence_iterator.current()
-    return(split)
-
-def wordsplitter(locale):
-    word_iterator = icu.BreakIterator.createWordInstance(locale)
-    def split(txt):
-        word_iterator.setText(txt)
-        left_end = word_iterator.current()
-        while word_iterator.nextBoundary() != icu.BreakIterator.DONE:
-            if (word_iterator.getRuleStatus() >=100):
-                yield txt[left_end:word_iterator.current()]
-            left_end = word_iterator.current()
-    return(split)
-
-def tokenize(locale):
-    sentences = sentence_splitter(locale)
-    words = word_splitter(locale)
-    def split(txt):
-        for sentence in sentences(txt):
-            yield words(sentence)
 
 def windows(generator, size):
     """
@@ -62,7 +33,6 @@ def split64(num):
     """
     mask = 4294967295 # mask = 111..111 = 32 ones
     return (num & mask, (num >> 32) & mask)
-
 
 def vector_generator(dim, nonzeros, cache_size):
     """
