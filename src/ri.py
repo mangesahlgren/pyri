@@ -2,9 +2,49 @@
 # Random Indexing
 # re-implementation April 2016
 ####################################
+import util
+import numpy
 import math
-import numpy as np
-import numpy.random as nprnd
+from collections import Counter
+import itertools
+from enum import Enum
+
+def words(line):
+    yield from iter(line.strip().split())
+
+class Direction(Enum):
+    left  = 0
+    right = 1
+
+class WordSpace(object):
+    def __init__(self):
+        self.total = 0             # Total number of tokens
+        self.collocation = {}      # focus o=> (context counter) 
+        self.wordcount = Counter() # focus counter
+
+    def addCount(self, focus, context):
+        if focus not in self.wordcount:
+            self.collocation[focus] = Counter()
+        self.collocation[focus].update(context)
+        self.wordcount[focus] += 1
+        self.total += 1
+
+# online frequency weight defined in:
+# Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
+def weightFunc(freq,words,theta):
+    return math.exp(-theta*(freq/words))
+
+def dsm(infile, size, ws):
+    with open(infile,'r') as handle:
+        for line in handle:
+            for (focus, (left_context, right_context)) in util.windows(words(line), size):
+                context = itertools.chain(
+                        ((Direction.left, x) for x in left_context),
+                        ((Direction.right, x) for x in right_context))
+                ws.addCount(focus, context) 
+    return ws
+
+"""
 from collections import Counter
 import operator
 import scipy.spatial as st
@@ -256,3 +296,7 @@ def vocabulary_test(testfile,verb=True):
         print("Unknown answers: " + str(unknown_answer))
     else:
         return float(corr)/float(tot)
+=======
+def weightFunc(freq,words,theta):
+    return math.exp(-theta*(freq/words))
+"""

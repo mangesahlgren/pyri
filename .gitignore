@@ -1,0 +1,12 @@
+#Vim swap files
+*.swp
+
+#Compiled python
+*.pyc
+
+#cython-generated files and libraries
+*.cpp
+*.so
+
+#setuptools build
+build/

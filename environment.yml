@@ -1,0 +1,11 @@
+name: pyri
+dependencies:
+- python=3.5
+- numpy
+- scipy
+- murmurhash
+- cython
+- nltk
+- pip
+- pip:
+    - PyICU
