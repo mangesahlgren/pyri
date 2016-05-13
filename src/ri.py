@@ -32,35 +32,24 @@ class WordSpace(object):
 #        self.wordcount[focus] += 1
 #        self.total += 1
     
-    def add_count(self, focus, context):
-        print(focus)
-        self.wordcount[focus] += 1
-        self.total += 1
-        if focus not in self.collocation:
-            self.collocation[focus] = Counter()
-        self.collocation[focus][(Direction.left, context)] += weight_func(
-                self.wordcount[context], self.getUniq(), self.theta)
-        self.collocation[context][(Direction.right, focus)] += weight_func(
-                self.wordcount[focus], self.getUniq(), self.theta)
-
     def add_counts(self, focus, contexts):
         self.wordcount[focus] += 1
         self.total += 1
         if focus not in self.collocation:
             self.collocation[focus] = Counter()
         for context in contexts:
-            self.collocation[focus][(Direction.left, context)] += weight_func(
-                    self.wordcount[context], self.getUniq(), self.theta)
-            self.collocation[context][(Direction.right, focus)] += weight_func(
-                    self.wordcount[focus], self.getUniq(), self.theta)
+            self.collocation[focus][(Direction.left, context)] += \
+                    self.getWeight(context)
+            self.collocation[context][(Direction.right, focus)] += \
+                    self.getWeight(focus)
+
+    # online frequency weight defined in:
+    # Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
+    def getWeight(self, word):
+        return math.exp(-self.theta*(self.wordcount[word] / len(self.wordcount)))
 
     def getUniq(self):
         return len(self.wordcount)
-
-# online frequency weight defined in:
-# Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
-def weight_func(freq, words, theta):
-    return math.exp(-theta*(freq/words))
 
 def dsm(infile, size, ws):
     with open(infile,'r') as handle:
@@ -92,19 +81,6 @@ theta = 0.5
 ####################################
 # Core functions
 ####################################
-
-def dsm(infile,ctxwin):
-    print("Started: " + strftime("%H:%M:%S",gmtime()))
-    wordtokens = 0
-    wordtypes = 0
-    with open(infile,"r") as inp:
-        for line in inp:
-            wrdlst = line.strip().split()
-            updatetokens,wordtypes = update_vecs(wrdlst,ctxwin,wordtokens,wordtypes)
-            wordtokens += updatetokens
-    print("Number of word tokens: " + str(wordtokens))
-    print("Number of word types: " + str(wordtypes))
-    print("Finished: " + strftime("%H:%M:%S",gmtime()))
 
 def check_reps(wrd,wordtypes):
     global rivecs
