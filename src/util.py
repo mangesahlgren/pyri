@@ -10,7 +10,7 @@ import hasher
 
 def windows(generator, size):
     """
-    Create a generator of type [(left_context, a, right_context)]
+    Create a generator of type [(focus, (left_context, right_context))]
     from a generator of type [a], where left_context has size
     left_size and right_context has size right_size.
     """
@@ -26,6 +26,16 @@ def windows(generator, size):
         focus = right_context.popleft()
         yield(focus, (left_context, right_context))
         left_context.append(focus)
+
+def left_windows(generator, size):
+    """
+    Create a generator of type [(focus, left_context)]
+    """
+    g = iter(generator)
+    left_context = deque((), size)
+    for elem in g:
+        yield(elem, left_context)
+        left_context.append(elem)
 
 def split64(num):
     """

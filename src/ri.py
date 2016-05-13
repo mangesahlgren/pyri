@@ -17,31 +17,56 @@ class Direction(Enum):
     right = 1
 
 class WordSpace(object):
-    def __init__(self):
+    def __init__(self, theta):
+        self.theta = theta
         self.total = 0             # Total number of tokens
         self.collocation = {}      # focus o=> (context counter) 
         self.wordcount = Counter() # focus counter
 
-    def addCount(self, focus, context):
-        if focus not in self.wordcount:
-            self.collocation[focus] = Counter()
-        self.collocation[focus].update(context)
+# I'd prefer the following, as it is semantically simpler. 
+# Following the structure of the old code, the other variant should be used.
+#    def add_count(self, focus, context):
+#        if focus not in self.wordcount:
+#            self.collocation[focus] = Counter()
+#        self.collocation[focus].update(context)
+#        self.wordcount[focus] += 1
+#        self.total += 1
+    
+    def add_count(self, focus, context):
+        print(focus)
         self.wordcount[focus] += 1
         self.total += 1
+        if focus not in self.collocation:
+            self.collocation[focus] = Counter()
+        self.collocation[focus][(Direction.left, context)] += weight_func(
+                self.wordcount[context], self.getUniq(), self.theta)
+        self.collocation[context][(Direction.right, focus)] += weight_func(
+                self.wordcount[focus], self.getUniq(), self.theta)
+
+    def add_counts(self, focus, contexts):
+        self.wordcount[focus] += 1
+        self.total += 1
+        if focus not in self.collocation:
+            self.collocation[focus] = Counter()
+        for context in contexts:
+            self.collocation[focus][(Direction.left, context)] += weight_func(
+                    self.wordcount[context], self.getUniq(), self.theta)
+            self.collocation[context][(Direction.right, focus)] += weight_func(
+                    self.wordcount[focus], self.getUniq(), self.theta)
+
+    def getUniq(self):
+        return len(self.wordcount)
 
 # online frequency weight defined in:
 # Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
-def weightFunc(freq,words,theta):
+def weight_func(freq, words, theta):
     return math.exp(-theta*(freq/words))
 
 def dsm(infile, size, ws):
     with open(infile,'r') as handle:
         for line in handle:
-            for (focus, (left_context, right_context)) in util.windows(words(line), size):
-                context = itertools.chain(
-                        ((Direction.left, x) for x in left_context),
-                        ((Direction.right, x) for x in right_context))
-                ws.addCount(focus, context) 
+            for (focus, left_context) in util.left_windows(words(line), size):
+                ws.add_counts(focus, left_context)
     return ws
 
 """
