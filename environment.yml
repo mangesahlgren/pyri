@@ -5,3 +5,4 @@ dependencies:
 - scipy
 - murmurhash
 - cython
+- pylint
