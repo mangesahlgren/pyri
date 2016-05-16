@@ -18,15 +18,17 @@ class Direction(Enum):
 
 class WordSpace(object):
     def __init__(self, theta):
+        self.mincount = 100
         self.theta = theta
         self.total = 0             # Total number of tokens
         self.collocation = {}      # focus o=> (context counter) 
         self.wordcount = Counter() # focus counter
+        self.vecs = {}             # Dense vectors
 
 # I'd prefer the following, as it is semantically simpler. 
 # Following the structure of the old code, the other variant should be used.
 #    def add_count(self, focus, context):
-#        if focus not in self.wordcount:
+#        if focus not in self.collocation:
 #            self.collocation[focus] = Counter()
 #        self.collocation[focus].update(context)
 #        self.wordcount[focus] += 1
@@ -50,6 +52,13 @@ class WordSpace(object):
 
     def getUniq(self):
         return len(self.wordcount)
+
+    def project(self, projection):
+        for focus, counts in self.collocation.items():
+            if len(collocation[focus]) > self.mincount:
+                for context, weight in counts:
+                    self.vec[focus] += projection(context) * weight
+                del collocation[focus]
 
 def dsm(infile, size, ws):
     with open(infile,'r') as handle:
