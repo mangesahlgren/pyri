@@ -4,9 +4,9 @@ Module for utility functions.
 
 import itertools
 from collections import deque
-import numpy
 import functools
-import hasher
+import numpy
+import pyri.hasher as hasher
 
 def windows(generator, size):
     """
@@ -14,10 +14,10 @@ def windows(generator, size):
     from a generator of type [a], where left_context has size
     left_size and right_context has size right_size.
     """
-    g = iter(generator)
+    elems = iter(generator)
     left_context = deque((), size)
-    right_context = deque(itertools.islice(g, 0, size), size)
-    for elem in g:
+    right_context = deque(itertools.islice(elems, 0, size), size)
+    for elem in elems:
         focus = right_context.popleft()
         right_context.append(elem)
         yield(focus, (left_context, right_context))
@@ -31,9 +31,8 @@ def left_windows(generator, size):
     """
     Create a generator of type [(focus, left_context)]
     """
-    g = iter(generator)
     left_context = deque((), size)
-    for elem in g:
+    for elem in iter(generator):
         yield(elem, left_context)
         left_context.append(elem)
 
@@ -57,4 +56,5 @@ def vector_generator(dim, nonzeros, cache_size):
         return(numpy.vstack((
             generator.randint(dim-1, size=nonzeros),
             generator.randint(0, high=2, size=nonzeros)*2-1)))
-    return(index_vector)
+    return index_vector
+

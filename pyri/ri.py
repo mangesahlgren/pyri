@@ -1,31 +1,41 @@
-####################################
-# Random Indexing
-# re-implementation April 2016
-####################################
-import util
-import numpy
+"""
+Random Indexing
+re-implementation April 2016
+"""
 import math
 from collections import Counter
-import itertools
 from enum import Enum
+import pyri.util as util
 
 def words(line):
+    """
+    Make a generator from a line, yielding each whitespace delimited word.
+    """
     yield from iter(line.strip().split())
 
 class Direction(Enum):
-    left  = 0
+    """
+    An enum encoding direction: left, or right.
+    """
+    left = 0
     right = 1
 
 class WordSpace(object):
-    def __init__(self, theta):
-        self.mincount = 100
+    """
+    A WordSpace where word usage statistics are aggregated, and parameters
+    specfied. Saves raw collocation data that is distilled into a dense
+    matrix if the collocation is "dense" enougn.
+    """
+    def __init__(self, theta, mincount, projection):
+        self.projection = projection
+        self.mincount = mincount
         self.theta = theta
         self.total = 0             # Total number of tokens
-        self.collocation = {}      # focus o=> (context counter) 
+        self.collocation = {}      # focus o=> (context counter)
         self.wordcount = Counter() # focus counter
         self.vecs = {}             # Dense vectors
 
-# I'd prefer the following, as it is semantically simpler. 
+# I'd prefer the following, as it is semantically simpler.
 # Following the structure of the old code, the other variant should be used.
 #    def add_count(self, focus, context):
 #        if focus not in self.collocation:
@@ -33,46 +43,58 @@ class WordSpace(object):
 #        self.collocation[focus].update(context)
 #        self.wordcount[focus] += 1
 #        self.total += 1
-    
+
     def add_counts(self, focus, contexts):
+        """
+        Add collocation counts to the wordspace.
+        """
         self.wordcount[focus] += 1
         self.total += 1
         if focus not in self.collocation:
             self.collocation[focus] = Counter()
         for context in contexts:
             self.collocation[focus][(Direction.left, context)] += \
-                    self.getWeight(context)
+                    self.get_weight(context)
             self.collocation[context][(Direction.right, focus)] += \
-                    self.getWeight(focus)
+                    self.get_weight(focus)
 
-    # online frequency weight defined in:
-    # Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
-    def getWeight(self, word):
-        return math.exp(-self.theta*(self.wordcount[word] / len(self.wordcount)))
+    def get_weight(self, word):
+        """
+        Online weight scheme as defined in:
+        Sahlgren et al. (2016) The Gavagai Living Lexicon, LREC
+        """
+        return math.exp(-self.theta*(self.wordcount[word] /
+                                     self.get_uniq()))
 
-    def getUniq(self):
+    def get_uniq(self):
+        """
+        Get the number of unique tokens this wordspace has seen.
+        """
         return len(self.wordcount)
 
-    def project(self, projection):
+    def distill(self):
+        """
+        Distill the raw collocation into distributional vectors using the
+        projection function.
+        """
         for focus, counts in self.collocation.items():
-            if len(collocation[focus]) > self.mincount:
+            if len(self.collocation[focus]) > self.mincount:
                 for context, weight in counts:
-                    self.vec[focus] += projection(context) * weight
-                del collocation[focus]
+                    self.vecs[focus] += self.projection(context) * weight
+                del self.collocation[focus]
 
-def dsm(infile, size, ws):
-    with open(infile,'r') as handle:
+def dsm(infile, size, wordspace):
+    """
+    Add the contents of infile to the wordspace,
+    with contexts windows of size "size".
+    """
+    with open(infile, 'r') as handle:
         for line in handle:
             for (focus, left_context) in util.left_windows(words(line), size):
-                ws.add_counts(focus, left_context)
-    return ws
+                wordspace.add_counts(focus, left_context)
+    return wordspace
 
 """
-from collections import Counter
-import operator
-import scipy.spatial as st
-import scipy.sparse as sp
-from time import gmtime,strftime
 np.seterr(divide='ignore', invalid='ignore')
 
 ####################################
@@ -83,9 +105,6 @@ dimen = 2000
 nonzeros = 8
 delta = 60
 theta = 0.5
-# worddict = {}
-# rivecs = []
-# distvecs = []
 
 ####################################
 # Core functions
