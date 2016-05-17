@@ -7,4 +7,4 @@ To install and switch to the envrionment specified in environment.yml:
 ../pyri$ source activate -n pyri
 
 To build murmurhash:
-../pyri$ python setup.py build_ext -b src/
+../pyri$ python setup.py build_ext -b pyri/

@@ -35,7 +35,7 @@ two memory consecutive uint64s, need to look into cython.
 Went with murmurhash. The python cityhash library
 did not play well with python 3.
 After messing around in cython i got it to work, just run 
-> python setup.py build-ext -b src/
+> python setup.py build-ext -b pyri/
 in the pyri directory after initiating the conda environment, and switching to it. 
 """
 

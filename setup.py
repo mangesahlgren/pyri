@@ -8,7 +8,7 @@ setup(
     ext_modules = [
         Extension(
             'hasher',
-            sources=['src/hasher.pyx'],
+            sources=['pyri/hasher.pyx'],
             language='c++',
             extra_compile_args=['-O3','-g', '-I'+murmurhash.get_include()]
         )
