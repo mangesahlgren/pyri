@@ -320,16 +320,26 @@ def tsvd(k):
     dimred = u * s
     return dimred
 
+def make_ri_matrix():
+    global rivecs
+    mat = np.zeros((len(rivecs),dimen))
+    ind = 0
+    for i in rivecs:
+        np.add.at(mat[ind],rivecs[ind][:,0],rivecs[ind][:,1])
+        ind += 1
+    return mat
+
 ####################################
 # Similarity
 ####################################
 
 def sim(word1,word2,model=distvecs):
-    global vocab
     return 1 - st.distance.cosine(model[get_index(word1)],model[get_index(word2)])
 
+def synt_sim(word1,word2,rot,synt_matrix,model=distvecs):
+    return 1 - st.distance.cosine(model[get_index(word1)],np.roll(synt_matrix[get_index(word2)],+rot))
+
 def nns(word,num,model=distvecs):
-    global vocab
     if model == distvecs:
         matrix = np.asmatrix(distvecs)
         v = get_vec(word).reshape(1, -1)
@@ -337,6 +347,19 @@ def nns(word,num,model=distvecs):
         matrix = model
         v = model[get_index(word)].reshape(1, -1)
     nns = st.distance.cdist(matrix, v, 'cosine').reshape(-1)
+    indices = [i for i in sorted(enumerate(nns), key=lambda x:x[1])]
+    cnt = 1
+    while cnt <= num:
+        ele = [key for (key,value) in vocab.items() if value[0] == indices[cnt][0]]
+        print(ele[0] + ' ' + str(1 - indices[cnt][1]))
+        cnt += 1
+
+def synt_nns(word,num,rot,synt_matrix,model=distvecs):
+    if model == distvecs:
+        v = np.roll(get_vec(word).reshape(1, -1),-rot)
+    else:
+        v = np.roll(model[get_index(word)].reshape(1, -1),-rot)
+    nns = st.distance.cdist(synt_matrix, v, 'cosine').reshape(-1)
     indices = [i for i in sorted(enumerate(nns), key=lambda x:x[1])]
     cnt = 1
     while cnt <= num:
