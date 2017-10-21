@@ -78,15 +78,15 @@ def dsm(infile, win=2, trainfunc='direction', indexfunc='legacy', dimen=2000, no
             if trainfunc == 'ngrams':
                 newtokens, types, ngrams, distvecs, rivecs, vocab = update_vecs_ngrams(wrdlst, win, dimen, nonzeros, delta, theta, tokens, types, ngrams, vocab, rivecs, distvecs, indexfunc, use_rivecs, corr=False)
             elif trainfunc == 'window':
-                newtokens, types, distvecs, rivecs, vocab = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, distvecs, 0, indexfunc, use_rivecs, use_weights, corr=False, collocation=False)
+                newtokens, types, distvecs, rivecs, vocab = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, rivecs_full, distvecs, 0, indexfunc, use_rivecs, use_weights, corr=False, coll=False)
             elif trainfunc == 'random':
                 newtokens, types, distvecs, rivecs, vocab = update_vecs_random(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, distvecs, 1, indexfunc)
             elif trainfunc == 'corr':
-                newtokens, types, distvecs, rivecs, vocab, rivecs_full = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, rivecs_full, distvecs, 1, indexfunc, use_rivecs, use_weights, corr=True, collocation=False)
+                newtokens, types, distvecs, rivecs, vocab, rivecs_full = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, rivecs_full, distvecs, 1, indexfunc, use_rivecs, use_weights, corr=True, coll=False)
             elif trainfunc == 'coll':
-                newtokens, types, distvecs, rivecs, vocab = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, distvecs, 1, indexfunc, use_rivecs, use_weights, corr=True, collocation=True)
+                newtokens, types, distvecs, rivecs, vocab, rivecs_full = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, rivecs_full, distvecs, 1, indexfunc, use_rivecs, use_weights, corr=True, coll=True)
             else:
-                newtokens, types, distvecs, rivecs, vocab = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, distvecs, 1, indexfunc, use_rivecs, use_weights, corr=False, collocation=False)
+                newtokens, types, distvecs, rivecs, vocab = update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, rivecs_full, distvecs, 1, indexfunc, use_rivecs, use_weights, corr=False, coll=False)
             tokens += newtokens
     print("Number of word tokens: " + str(tokens))
     print("Number of word types: " + str(types))
@@ -95,9 +95,12 @@ def dsm(infile, win=2, trainfunc='direction', indexfunc='legacy', dimen=2000, no
     print("Finished: " + strftime("%H:%M:%S", gmtime()))
     return distvecs, rivecs, vocab
 
-def check_reps(wrd, types, indexfunc, dimen, nonzeros, corr, use_rivecs, rivecs, distvecs, vocab):
+def check_reps(wrd, types, indexfunc, dimen, nonzeros, corr, use_rivecs, rivecs, rivecs_full, distvecs, vocab):
     if wrd in vocab:
-        return types, rivecs, distvecs, vocab, False
+        if corr:
+            return types, rivecs, distvecs, vocab, rivecs_full
+        else:
+            return types, rivecs, distvecs, vocab, False
     else:
         if not use_rivecs:
             if indexfunc == 'verysparse':
@@ -112,27 +115,27 @@ def check_reps(wrd, types, indexfunc, dimen, nonzeros, corr, use_rivecs, rivecs,
         distvecs.append(np.zeros(dimen))
         vocab[wrd] = [types, 0]
         if corr:
-            return types, rivecs, distvecs, vocab, rivecs_full
+            return types+1, rivecs, distvecs, vocab, rivecs_full
         else:
             return types+1, rivecs, distvecs, vocab, False
 
-def update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, distvecs, pi, indexfunc, use_rivecs, use_weights, corr, collocation):
+def update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivecs, rivecs_full, distvecs, pi, indexfunc, use_rivecs, use_weights, corr, coll):
     localtoken = 0
     ind = 0
     stop = len(wrdlst)
     for w in wrdlst:
         localtoken += 1
-        types, rivecs, distvecs, vocab, rivecs_full = check_reps(w, types, indexfunc, dimen, nonzeros, corr, use_rivecs, rivecs, distvecs, vocab)
+        types, rivecs, distvecs, vocab, rivecs_full = check_reps(w, types, indexfunc, dimen, nonzeros, corr, use_rivecs, rivecs, rivecs_full, distvecs, vocab)
         wind = get_index(w, vocab)
         wvec = get_vec(w, vocab, distvecs)
         vocab[w][1] += 1
         lind = 1
         while (lind < win+1) and ((ind+lind) < stop):
             c = wrdlst[ind+lind]
-            types, rivecs, distvecs, vocab, rivecs_full = check_reps(c, types, indexfunc, dimen, nonzeros, corr, use_rivecs, rivecs, distvecs, vocab)
+            types, rivecs, distvecs, vocab, rivecs_full = check_reps(c, types, indexfunc, dimen, nonzeros, corr, use_rivecs, rivecs, rivecs_full, distvecs, vocab)
             cind = get_index(c, vocab)
             cvec = get_vec(c, vocab, distvecs)
-            if corr and not collocation:
+            if corr and not coll:
                 if vocab[c][1] > 1: # stupid check that should not be necessary
                     # only correct ri for when ctx vec is not a stopword
                     if weight_func(get_freq(c, vocab), types) > 0.25:
@@ -142,12 +145,16 @@ def update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivec
                         ### The expensive part is here - we should be able to optimize this (perhaps using Cython?)
             # vec_adder(wvec, rivecs[cind][:,0]+pi, rivecs[cind][:,1]*weight_func(get_freq(c),types))
             # vec_adder(cvec, rivecs[wind][:,0]-pi, rivecs[wind][:,1]*weight_func(get_freq(w),types))
-            if collocation:
+            if coll:
                 corr1 = st.distance.cosine(wvec, rivecs_full[cind])
                 corr2 = st.distance.cosine(cvec, rivecs_full[wind])
-                if not math.isnan(corr1) and not math.isinf(corr1):
+                if math.isnan(corr1) or math.isinf(corr1):
+                    np.add.at(wvec, rivecs[cind][:,0]+pi, rivecs[cind][:,1])
+                else:
                     np.add.at(wvec, rivecs[cind][:,0]+pi, rivecs[cind][:,1]*corr1)
-                if not math.isnan(corr2) and not math.isinf(corr2):
+                if math.isnan(corr2) or math.isinf(corr2):
+                    np.add.at(cvec, rivecs[wind][:,0]-pi, rivecs[wind][:,1])
+                else:
                     np.add.at(cvec, rivecs[wind][:,0]-pi, rivecs[wind][:,1]*corr2)
             elif use_weights:
                 np.add.at(wvec, rivecs[cind][:,0]+pi, rivecs[cind][:,1]*weight_func(get_freq(c, vocab), types, delta))
@@ -159,7 +166,7 @@ def update_vecs(wrdlst, win, dimen, nonzeros, delta, tokens, types, vocab, rivec
             # cvec += rivecs[wind]
             lind += 1
         ind += 1
-    if corr:
+    if corr or coll:
         return localtoken, types, distvecs, rivecs, vocab, rivecs_full
     else:
         return localtoken, types, distvecs, rivecs, vocab
